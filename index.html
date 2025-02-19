@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classement de la Course et Calcul</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            background: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #444;
+            text-align: center;
+        }
+
+        th {
+            background: #ff5722;
+            color: white;
+            font-size: 18px;
+        }
+
+        tr:nth-child(odd) {
+            background: #222;
+        }
+
+        tr:nth-child(even) {
+            background: #2a2a2a;
+        }
+
+        tr:first-child {
+            font-weight: bold;
+            background: #ff9800;
+        }
+
+        .gold { background: gold !important; color: black; font-weight: bold; }
+        .silver { background: silver !important; color: black; font-weight: bold; }
+        .bronze { background: #cd7f32 !important; color: white; font-weight: bold; }
+
+        /* Style pour la valeur calculée */
+        #calculatedValue {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: #ff5722;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Zone d'affichage pour la valeur calculée -->
+    <div id="calculatedValue">
+        <!-- La valeur calculée sera affichée ici -->
+    </div>
+	
+	<h1>Classement Pilotes</h1>
+
+    <!-- Premier tableau -->
+    <table>
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Pilote</th>
+				<th>Équipe</th>
+                <th>Points</th>
+            </tr>
+        </thead>
+        <tbody id="table-body-1">
+            <!-- Données du premier tableau -->
+        </tbody>
+    </table>
+	
+	</br>
+
+	<h1>Classement Équipes</h1>
+
+    <!-- Deuxième tableau -->
+    <table>
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Équipe</th>
+                <th>Points</th>
+            </tr>
+        </thead>
+        <tbody id="table-body-2">
+            <!-- Données du deuxième tableau -->
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchTableData() {
+            const url = "https://acsm.ikacloud.fr/championship/693a52e2-695c-4bbf-9bad-471ed8416678"; // Remplace par l'URL réelle
+
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, "text/html");
+
+                // Sélectionne les bons tableaux en fonction de leur <div id="...">
+                const table1 = doc.querySelector("#drivers tbody");
+                const table2 = doc.querySelector("#teams tbody");
+
+                if (!table1 || !table2) {
+                    console.error("Impossible de trouver les tableaux !");
+                    return;
+                }
+
+                const tableBody1 = document.getElementById("table-body-1");
+                const tableBody2 = document.getElementById("table-body-2");
+                tableBody1.innerHTML = "";
+                tableBody2.innerHTML = "";
+
+                // Remplir le premier tableau (exclut la 3ᵉ colonne)
+                table1.querySelectorAll("tr").forEach((row, index) => {
+                    let newRow = document.createElement("tr");
+                    const cells = row.querySelectorAll("td");
+
+                    cells.forEach((cell, cellIndex) => {
+                        if (cellIndex !== 2) { // Exclut la 3ème colonne dans le premier tableau
+                            let newCell = cell.cloneNode(true);
+                            newRow.appendChild(newCell);
+                        }
+                    });
+
+                    if (index === 0) newRow.classList.add("gold");
+                    else if (index === 1) newRow.classList.add("silver");
+                    else if (index === 2) newRow.classList.add("bronze");
+
+                    tableBody1.appendChild(newRow);
+                });
+
+                // Remplir le deuxième tableau (inclut la 3ᵉ colonne)
+                table2.querySelectorAll("tr").forEach((row) => {
+                    let newRow = document.createElement("tr");
+                    const cells = row.querySelectorAll("td");
+
+                    cells.forEach((cell) => {
+                        let newCell = cell.cloneNode(true);
+                        newRow.appendChild(newCell);
+                    });
+
+                    tableBody2.appendChild(newRow);
+                });
+
+                // Récupérer la donnée depuis la page source (par exemple un <div> avec id "donnée")
+                const dataDiv = doc.querySelector("#progress-bar");
+                const data = parseFloat(dataDiv.innerText);
+
+                // Effectuer le calcul : (donnée * 22 / 100)
+                const result = (data * 22) / 100;
+				
+				// Arrondir la valeur à 2 décimales
+				const roundedResult = Math.round(result);
+
+                // Afficher le résultat en haut à gauche
+                const displayDiv = document.getElementById('calculatedValue');
+                displayDiv.innerText = `Course : ${roundedResult} / 22`;
+
+            } catch (error) {
+                console.error("Erreur lors de la récupération des données :", error);
+            }
+        }
+
+        // Met à jour les données toutes les 10 secondes
+        setInterval(fetchTableData, 10000);
+
+        // Charger les données au démarrage
+        window.onload = fetchTableData;
+    </script>
+
+</body>
+</html>
